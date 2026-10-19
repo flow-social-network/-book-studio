@@ -93,7 +93,7 @@ func (a *API) createProject(w http.ResponseWriter, r *http.Request) {
 	if in.Title=="" || in.Author=="" { fail(w,400,"VALIDATION_ERROR","Title and author are required"); return }
 	if in.Language=="" { in.Language="pt-BR" }; if in.Format=="" { in.Format="A5" }; if in.Status=="" { in.Status="draft" }; if len(in.Content)==0 { in.Content=json.RawMessage(`{"type":"doc","content":[{"type":"paragraph"}]}`) }
 	var p Project
-	err:=a.DB.QueryRow(r.Context(),`INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`,uid).Scan()
+	err:=a.DB.Exec(r.Context(),`INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`,uid)
 	if err!=nil && !errors.Is(err,pgx.ErrNoRows) { internal(w,err); return }
 	err=a.DB.QueryRow(r.Context(),`INSERT INTO projects(owner_id,title,author,subtitle,genre,language,format,description,status,content) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) RETURNING id::text,title,author,subtitle,genre,language,format,description,status,content,created_at,updated_at`,uid,in.Title,in.Author,in.Subtitle,in.Genre,in.Language,in.Format,in.Description,in.Status,string(in.Content)).Scan(&p.ID,&p.Title,&p.Author,&p.Subtitle,&p.Genre,&p.Language,&p.Format,&p.Description,&p.Status,&p.Content,&p.CreatedAt,&p.UpdatedAt)
 	if err!=nil { internal(w,err); return }; jsonOK(w,201,p)
@@ -130,7 +130,7 @@ func (a *API) createChapter(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};id:=r.PathValue("id")
 	if _,err:=a.project(r,uid,id);err!=nil{if errors.Is(err,pgx.ErrNoRows){fail(w,404,"NOT_FOUND","Project not found")}else{internal(w,err)};return}
 	var in chapterInput;if !decode(w,r,&in){return};in.Title=strings.TrimSpace(in.Title);if in.Title==""{fail(w,400,"VALIDATION_ERROR","Chapter title is required");return};if len(in.Content)==0{in.Content=json.RawMessage(`{"type":"doc","content":[{"type":"paragraph"}]}`)}
-	var c Chapter;err:=a.DB.QueryRow(r.Context(),`INSERT INTO chapters(project_id,owner_id,title,position,content) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING id::text,project_id::text,title,position,content,created_at,updated_at`,id,uid,in.Title,in.Position,string(in.Content)).Scan(&c.ID,&c.ProjectID,&c.Title,&c.Position,&c.Content,&c.CreatedAt,&c.UpdatedAt)
+	var c Chapter;err:=a.DB.QueryRow(r.Context(),`INSERT INTO chapters(project_id,owner_id,title,position,content) VALUES($1,$2,$3,(SELECT COALESCE(MAX(position)+1,0) FROM chapters WHERE project_id=$1),$5::jsonb) RETURNING id::text,project_id::text,title,position,content,created_at,updated_at`,id,uid,in.Title,in.Position,string(in.Content)).Scan(&c.ID,&c.ProjectID,&c.Title,&c.Position,&c.Content,&c.CreatedAt,&c.UpdatedAt)
 	if err!=nil{internal(w,err);return};jsonOK(w,201,c)
 }
 func (a *API) updateChapter(w http.ResponseWriter,r *http.Request) {
