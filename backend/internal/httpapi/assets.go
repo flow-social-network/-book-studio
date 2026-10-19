@@ -33,7 +33,7 @@ func (a *API) listAssets(w http.ResponseWriter,r *http.Request) {
 }
 func (a *API) uploadAsset(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return}
-	storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Configure ASSET_STORAGE_DIR on persistent backend storage before uploading files.");return}
+	storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Configure ASSET_STORAGE_DIR on persistent backend storage before uploading files.");return};if err:=ensureUser(r.Context(),a.DB,uid);err!=nil{internal(w,err);return}
 	r.Body=http.MaxBytesReader(w,r.Body,maxAssetBytes+(1<<20));if err:=r.ParseMultipartForm(maxAssetBytes);err!=nil{fail(w,413,"FILE_TOO_LARGE","The upload exceeds the configured size limit.");return}
 	file,header,err:=r.FormFile("file");if err!=nil{fail(w,400,"FILE_REQUIRED","Attach a file in the 'file' field.");return};defer file.Close()
 	if header.Size<=0||header.Size>maxAssetBytes{fail(w,413,"FILE_TOO_LARGE","File must be between 1 byte and 12 MB.");return}
