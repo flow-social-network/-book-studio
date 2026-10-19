@@ -1,4 +1,5 @@
 import {firebaseAuth} from '@/lib/firebase/client';
+import type {JSONContent} from '@tiptap/core';
 
 const baseURL = process.env.NEXT_PUBLIC_BOOK_STUDIO_API_URL?.replace(/\/$/, '');
 
@@ -38,7 +39,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export type BookContent = {type:'doc';content:Array<Record<string, unknown>>};
+export type BookContent = JSONContent;
 export type Project = {
   id:string;title:string;author:string;subtitle:string;genre:string;language:string;
   format:string;description:string;status:string;content:BookContent;
