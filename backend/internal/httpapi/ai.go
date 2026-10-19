@@ -46,11 +46,17 @@ func (a *API) generateAI(w http.ResponseWriter, r *http.Request) {
 	p, err := a.project(r, uid, r.PathValue("id"))
 	if errors.Is(err, pgx.ErrNoRows) { fail(w, 404, "NOT_FOUND", "Project not found"); return }
 	if err != nil { internal(w, err); return }
-	content, err := json.Marshal(p.Content)
+	manuscript := flattenJSON(p.Content)
+	rows, err := a.DB.Query(r.Context(), `SELECT title,content FROM chapters WHERE project_id=$1 AND owner_id=$2 ORDER BY position,id`, p.ID, uid)
 	if err != nil { internal(w, err); return }
-	system := "Você é um assistente editorial profissional. Ajude o autor sem afirmar fatos não presentes no material. Preserve a autoria e não invente referências. Contexto do livro: título=" + p.Title + "; autor=" + p.Author + "; gênero=" + p.Genre + "; descrição=" + p.Description + "; manuscrito JSON=" + string(content)
+	var chapterText strings.Builder
+	for rows.Next() { var title string; var raw []byte; if err:=rows.Scan(&title,&raw);err!=nil{rows.Close();internal(w,err);return};var node any;_ = json.Unmarshal(raw,&node);chapterText.WriteString("\\n\\n# "+title+"\\n"+flattenJSON(node)) }
+	if err:=rows.Err();err!=nil{rows.Close();internal(w,err);return};rows.Close()
+	if chapterText.Len()>0 { manuscript += chapterText.String() }
+	if len(manuscript)>100000 { manuscript=manuscript[:100000]+"\\n[Conteúdo truncado para respeitar o limite de contexto]" }
+	system := "Você é um assistente editorial profissional. Ajude o autor sem afirmar fatos não presentes no material. Preserve a autoria e não invente referências. Contexto do livro: título=" + p.Title + "; autor=" + p.Author + "; gênero=" + p.Genre + "; descrição=" + p.Description + "; manuscrito="+manuscript
 	if in.Mode == "review" {
-		system = "Você é um revisor editorial. Analise apenas o material fornecido e produza uma revisão estruturada em português com pontos fortes, problemas identificados, sugestões concretas e dúvidas para o autor. Não altere o manuscrito automaticamente. Contexto do livro: " + p.Title + "; manuscrito JSON=" + string(content)
+		system = "Você é um revisor editorial. Analise apenas o material fornecido e produza uma revisão estruturada em português com pontos fortes, problemas identificados, sugestões concretas e dúvidas para o autor. Não altere o manuscrito automaticamente. Contexto do livro: " + p.Title + "; manuscrito=" + manuscript
 	}
 	result, err := callNVIDIA(r.Context(), system, in.Instruction)
 	if err != nil {
