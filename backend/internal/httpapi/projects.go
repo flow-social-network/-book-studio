@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"book-studio/backend/internal/auth"
+	"github.com/flow-social-network/-book-studio/backend/internal/auth"
 )
 
 type API struct { DB *pgxpool.Pool }
