@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"log"
 	"errors"
 	"net/http"
 	"strings"
@@ -102,7 +103,7 @@ func (a *API) createProject(w http.ResponseWriter, r *http.Request) {
 	_,err:=a.DB.Exec(r.Context(),`INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`,uid)
 	if err!=nil { internal(w,err); return }
 	err=a.DB.QueryRow(r.Context(),`INSERT INTO projects(owner_id,title,author,subtitle,genre,language,format,description,status,content) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) RETURNING id::text,title,author,subtitle,genre,language,format,description,status,content,created_at,updated_at`,uid,in.Title,in.Author,in.Subtitle,in.Genre,in.Language,in.Format,in.Description,in.Status,string(in.Content)).Scan(&p.ID,&p.Title,&p.Author,&p.Subtitle,&p.Genre,&p.Language,&p.Format,&p.Description,&p.Status,&p.Content,&p.CreatedAt,&p.UpdatedAt)
-	if err!=nil { internal(w,err); return }; jsonOK(w,201,p)
+	if err!=nil { internal(w,err); return }; if err:=createNotification(r.Context(),a.DB,uid,"Livro criado",p.Title,"/app/editor/"+p.ID);err!=nil{log.Printf("create project notification: %v",err)}; jsonOK(w,201,p)
 }
 func (a *API) getProject(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r); if !ok { fail(w,401,"UNAUTHENTICATED","Sign-in required"); return }
@@ -137,7 +138,7 @@ func (a *API) createChapter(w http.ResponseWriter,r *http.Request) {
 	if _,err:=a.project(r,uid,id);err!=nil{if errors.Is(err,pgx.ErrNoRows){fail(w,404,"NOT_FOUND","Project not found")}else{internal(w,err)};return}
 	var in chapterInput;if !decode(w,r,&in){return};in.Title=strings.TrimSpace(in.Title);if in.Title==""{fail(w,400,"VALIDATION_ERROR","Chapter title is required");return};if len(in.Content)==0{in.Content=json.RawMessage(`{"type":"doc","content":[{"type":"paragraph"}]}`)}
 	var c Chapter;err:=a.DB.QueryRow(r.Context(),`INSERT INTO chapters(project_id,owner_id,title,position,content) VALUES($1,$2,$3,(SELECT COALESCE(MAX(position)+1,0) FROM chapters WHERE project_id=$1),$4::jsonb) RETURNING id::text,project_id::text,title,position,content,created_at,updated_at`,id,uid,in.Title,string(in.Content)).Scan(&c.ID,&c.ProjectID,&c.Title,&c.Position,&c.Content,&c.CreatedAt,&c.UpdatedAt)
-	if err!=nil{internal(w,err);return};jsonOK(w,201,c)
+	if err!=nil{internal(w,err);return};if err:=createNotification(r.Context(),a.DB,uid,"Capítulo criado",c.Title,"/app/editor/"+id);err!=nil{log.Printf("create chapter notification: %v",err)};jsonOK(w,201,c)
 }
 func (a *API) updateChapter(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};var in chapterInput;if !decode(w,r,&in){return};if strings.TrimSpace(in.Title)==""||len(in.Content)==0{fail(w,400,"VALIDATION_ERROR","Chapter title and content are required");return}
