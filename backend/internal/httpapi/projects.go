@@ -69,6 +69,7 @@ func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/me/preferences", a.putPreferences)
 	mux.HandleFunc("POST /api/v1/projects/{id}/ai", a.generateAI)
 	mux.HandleFunc("GET /api/v1/reviews", a.listReviews)
+	mux.HandleFunc("GET /api/v1/dashboard", a.dashboard)
 	mux.HandleFunc("POST /api/v1/projects/{id}/export/epub", a.exportEPUB)
 	mux.HandleFunc("GET /api/v1/assets", a.listAssets)
 	mux.HandleFunc("POST /api/v1/assets", a.uploadAsset)
