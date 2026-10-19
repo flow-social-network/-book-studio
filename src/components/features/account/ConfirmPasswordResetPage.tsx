@@ -1,0 +1,12 @@
+'use client';
+
+import Link from 'next/link';
+import {useState} from 'react';
+import {useSearchParams} from 'next/navigation';
+import {confirmPasswordReset,getAuth} from 'firebase/auth';
+import {BookOpen,LoaderCircle,AlertCircle,CheckCircle2} from 'lucide-react';
+import {firebaseAuth} from '@/lib/firebase/client';
+
+export default function ConfirmPasswordResetPage(){const params=useSearchParams();const code=params.get('oobCode')??'';const [password,setPassword]=useState('');const [error,setError]=useState('');const [done,setDone]=useState(false);const [busy,setBusy]=useState(false);
+async function submit(e:React.FormEvent){e.preventDefault();if(!code){setError('O link de redefinição é inválido ou está incompleto. Solicite um novo link.');return}setBusy(true);setError('');try{await confirmPasswordReset(firebaseAuth() as ReturnType<typeof getAuth>,code,password);setDone(true)}catch(e){setError(e instanceof Error?e.message:'Não foi possível redefinir a senha. Solicite um novo link.')}finally{setBusy(false)}}
+return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10"><section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"><Link href="/" className="inline-flex items-center gap-2 font-semibold text-blue-700"><BookOpen size={23}/> Book Studio</Link><h1 className="mt-7 text-2xl font-semibold">Definir nova senha</h1>{done?<div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><CheckCircle2 size={18} className="mr-2 inline"/>Senha alterada com sucesso pelo Firebase. <Link href="/login" className="font-semibold underline">Entrar</Link></div>:<form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm font-medium">Nova senha<input type="password" required minLength={8} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3"/></label>{error&&<div role="alert" className="flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"><AlertCircle size={18}/>{error}</div>}<button disabled={busy} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white disabled:opacity-50">{busy&&<LoaderCircle size={16} className="animate-spin"/>}Alterar senha</button></form>}<p className="mt-6 text-center text-sm"><Link href="/login" className="font-semibold text-blue-700">Voltar ao login</Link></p></section></main>}
