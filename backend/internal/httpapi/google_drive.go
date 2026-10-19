@@ -80,7 +80,11 @@ func (a *API) syncDriveProject(w http.ResponseWriter,r *http.Request) {
 	if err:=rows.Err();err!=nil{rows.Close();internal(w,err);return};rows.Close()
 	source:=cfg.TokenSource(r.Context(),&oauth2.Token{RefreshToken:refresh,TokenType:"Bearer"})
 	token,err:=source.Token();if err!=nil{fail(w,502,"DRIVE_TOKEN_REFRESH_FAILED","Google Drive authorization expired or was revoked. Reconnect the integration.");return}
-	fileID,err:=uploadDriveText(r.Context(),token.AccessToken,p.Title+".txt",body.String());if err!=nil{fail(w,502,"DRIVE_UPLOAD_FAILED",err.Error());return}
+	var existingID string
+	lookupErr:=a.DB.QueryRow(r.Context(),`SELECT drive_file_id FROM google_drive_sync_files WHERE owner_id=$1 AND project_id=$2`,uid,p.ID).Scan(&existingID)
+	var fileID string
+	if lookupErr==nil { fileID,err=updateDriveText(r.Context(),token.AccessToken,existingID,body.String()) } else if errors.Is(lookupErr,pgx.ErrNoRows) { fileID,err=uploadDriveText(r.Context(),token.AccessToken,p.Title+".txt",body.String()) } else { internal(w,lookupErr);return }
+	if err!=nil{fail(w,502,"DRIVE_UPLOAD_FAILED",err.Error());return}
 	_,err=a.DB.Exec(r.Context(),`INSERT INTO google_drive_sync_files(owner_id,project_id,drive_file_id,drive_name,synced_at) VALUES($1,$2,$3,$4,now()) ON CONFLICT(owner_id,project_id) DO UPDATE SET drive_file_id=EXCLUDED.drive_file_id,drive_name=EXCLUDED.drive_name,synced_at=now()`,uid,p.ID,fileID,p.Title+".txt")
 	if err!=nil{internal(w,err);return}
 	jsonOK(w,200,map[string]any{"synced":true,"projectId":p.ID,"driveFileId":fileID,"syncedAt":time.Now().UTC()})
@@ -108,3 +112,11 @@ func decryptToken(value string)(string,error){
 	sealed,err:=base64.StdEncoding.DecodeString(value);if err!=nil{return "",err};block,err:=aes.NewCipher(key);if err!=nil{return "",err};gcm,err:=cipher.NewGCM(block);if err!=nil{return "",err};if len(sealed)<gcm.NonceSize(){return "",fmt.Errorf("invalid encrypted token")};plain,err:=gcm.Open(nil,sealed[:gcm.NonceSize()],sealed[gcm.NonceSize():],nil);if err!=nil{return "",err};return string(plain),nil
 }
 func frontendURL()string{v:=strings.TrimRight(strings.TrimSpace(os.Getenv("FRONTEND_URL")),"/");if v==""{return "http://localhost:3000"};return v}
+
+func updateDriveText(ctx context.Context,accessToken,fileID,content string)(string,error){
+	req,err:=http.NewRequestWithContext(ctx,http.MethodPatch,"https://www.googleapis.com/upload/drive/v3/files/"+fileID+"?uploadType=media",strings.NewReader(content));if err!=nil{return "",err}
+	req.Header.Set("Authorization","Bearer "+accessToken);req.Header.Set("Content-Type","text/plain; charset=UTF-8")
+	client:=&http.Client{Timeout:45*time.Second};resp,err:=client.Do(req);if err!=nil{return "",err};defer resp.Body.Close()
+	raw,err:=io.ReadAll(io.LimitReader(resp.Body,1<<20));if err!=nil{return "",err};if resp.StatusCode<200||resp.StatusCode>=300{return "",fmt.Errorf("Google Drive update returned HTTP %d",resp.StatusCode)}
+	var result struct{ID string `json:"id"`};if err:=json.Unmarshal(raw,&result);err!=nil||result.ID==""{return "",fmt.Errorf("Google Drive update did not return a file ID")};return result.ID,nil
+}
