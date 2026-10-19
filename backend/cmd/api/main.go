@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	firebaseauth "firebase.google.com/go/v4/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"book-studio/backend/internal/auth"
 	"book-studio/backend/internal/httpapi"
@@ -59,4 +59,3 @@ func cors(next http.Handler, allowed string)http.Handler{return http.HandlerFunc
 	for _,candidate:=range strings.Split(allowed,","){candidate=strings.TrimSpace(candidate);if candidate!=""&&origin==candidate{w.Header().Set("Access-Control-Allow-Origin",origin);w.Header().Add("Vary","Origin");w.Header().Set("Access-Control-Allow-Headers","Authorization, Content-Type");w.Header().Set("Access-Control-Allow-Methods","GET, POST, PATCH, PUT, DELETE, OPTIONS");break}}
 	if r.Method==http.MethodOptions { w.WriteHeader(http.StatusNoContent);return };next.ServeHTTP(w,r)
 })}
-var _ *firebaseauth.Client
