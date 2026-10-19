@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -47,7 +48,7 @@ func (a *API) uploadAsset(w http.ResponseWriter,r *http.Request) {
 	out,err:=os.OpenFile(dest,os.O_WRONLY|os.O_CREATE|os.O_EXCL,0600);if err!=nil{internal(w,err);return}
 	written,copyErr:=io.Copy(out,io.LimitReader(file,maxAssetBytes+1));closeErr:=out.Close();if copyErr!=nil||closeErr!=nil||written>maxAssetBytes{_ = os.Remove(dest);fail(w,500,"STORAGE_WRITE_FAILED","Could not store the uploaded file.");return}
 	var x Asset;err=a.DB.QueryRow(r.Context(),`INSERT INTO assets(owner_id,project_id,filename,mime_type,storage_key,byte_size) VALUES($1,$2,$3,$4,$5,$6) RETURNING id::text,project_id::text,filename,mime_type,byte_size,created_at`,uid,project,name,expected,key,written).Scan(&x.ID,&x.ProjectID,&x.Filename,&x.MimeType,&x.ByteSize,&x.CreatedAt)
-	if err!=nil{_ = os.Remove(dest);internal(w,err);return};jsonOK(w,201,x)
+	if err!=nil{_ = os.Remove(dest);internal(w,err);return};if err:=createNotification(r.Context(),a.DB,uid,"Arquivo adicionado",x.Filename,"/app/biblioteca");err!=nil{log.Printf("create asset notification: %v",err)};jsonOK(w,201,x)
 }
 func (a *API) downloadAsset(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Persistent file storage is not configured.");return}
