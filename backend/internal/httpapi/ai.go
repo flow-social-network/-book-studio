@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 )
 
 type aiRequest struct {
@@ -50,4 +48,3 @@ func callNVIDIA(ctx context.Context,system,user string)(string,error){
 	var parsed nimResponse;if err:=json.Unmarshal(body,&parsed);err!=nil{return "",fmt.Errorf("NVIDIA response was not valid JSON")};if parsed.Error!=nil{return "",fmt.Errorf("NVIDIA provider returned an error")};if len(parsed.Choices)==0||strings.TrimSpace(parsed.Choices[0].Message.Content)==""{return "",fmt.Errorf("NVIDIA provider returned no content")};return parsed.Choices[0].Message.Content,nil
 }
 func envOr(key,fallback string)string{if v:=strings.TrimSpace(os.Getenv(key));v!=""{return v};return fallback}
-var _ = pgx.ErrNoRows
