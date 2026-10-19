@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"book-studio/backend/internal/database"
-	"book-studio/backend/internal/auth"
-	"book-studio/backend/internal/httpapi"
+	"github.com/flow-social-network/-book-studio/backend/internal/database"
+	"github.com/flow-social-network/-book-studio/backend/internal/auth"
+	"github.com/flow-social-network/-book-studio/backend/internal/httpapi"
 )
 
 func main() {
