@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_BOOK_STUDIO_API_URL: http://127.0.0.1:8080
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-build-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-build.invalid
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-build-project
+          NEXT_PUBLIC_FIREBASE_APP_ID: ci-build-app
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache-dependency-path: backend/go.sum
+      - working-directory: backend
+        run: go mod tidy
+      - working-directory: backend
+        run: go test ./...
+      - working-directory: backend
+        run: go vet ./...
