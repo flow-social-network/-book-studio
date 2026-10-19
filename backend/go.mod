@@ -1,4 +1,4 @@
-module book-studio/backend
+module github.com/flow-social-network/-book-studio/backend
 
 go 1.24.0
 
