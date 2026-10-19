@@ -15,7 +15,7 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	if dir == "" { dir = "migrations" }
 	if err := pool.QueryRow(ctx, `SELECT 1`).Scan(new(int)); err != nil { return fmt.Errorf("database ping before migration: %w", err) }
 	if _, err := pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil { return fmt.Errorf("create migration ledger: %w", err) }
-	for _, version := range []string{"0001_initial", "0002_google_drive"} {
+	for _, version := range []string{"0001_initial", "0002_google_drive", "0003_notifications"} {
 		var applied bool
 		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, version).Scan(&applied); err != nil { return fmt.Errorf("read migration ledger: %w", err) }
 		if applied { continue }
