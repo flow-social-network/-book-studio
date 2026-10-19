@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,7 +33,7 @@ func (a *API) listAssets(w http.ResponseWriter,r *http.Request) {
 func (a *API) uploadAsset(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return}
 	storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Configure ASSET_STORAGE_DIR on persistent backend storage before uploading files.");return}
-	r.Body=http.MaxBytesReader(w,r.Body,maxAssetBytes+1<<20);if err:=r.ParseMultipartForm(maxAssetBytes);err!=nil{fail(w,413,"FILE_TOO_LARGE","The upload exceeds the configured size limit.");return}
+	r.Body=http.MaxBytesReader(w,r.Body,maxAssetBytes+(1<<20));if err:=r.ParseMultipartForm(maxAssetBytes);err!=nil{fail(w,413,"FILE_TOO_LARGE","The upload exceeds the configured size limit.");return}
 	file,header,err:=r.FormFile("file");if err!=nil{fail(w,400,"FILE_REQUIRED","Attach a file in the 'file' field.");return};defer file.Close()
 	if header.Size<=0||header.Size>maxAssetBytes{fail(w,413,"FILE_TOO_LARGE","File must be between 1 byte and 12 MB.");return}
 	name:=filepath.Base(strings.TrimSpace(header.Filename));if name==""||name=="."||name==string(filepath.Separator){fail(w,400,"INVALID_FILENAME","Filename is invalid.");return}
@@ -54,7 +53,7 @@ func (a *API) downloadAsset(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Persistent file storage is not configured.");return}
 	var name,mimeType,key string;err:=a.DB.QueryRow(r.Context(),`SELECT filename,mime_type,storage_key FROM assets WHERE id=$1 AND owner_id=$2`,r.PathValue("id"),uid).Scan(&name,&mimeType,&key);if errors.Is(err,pgx.ErrNoRows){fail(w,404,"NOT_FOUND","File not found.");return};if err!=nil{internal(w,err);return}
 	if filepath.Base(key)!=key{fail(w,500,"INVALID_STORAGE_KEY","Stored file metadata is invalid.");return};f,err:=os.Open(filepath.Join(storageDir,key));if err!=nil{fail(w,404,"FILE_MISSING","The file is missing from configured storage.");return};defer f.Close()
-	w.Header().Set("Content-Type",mime.TypeByExtension(filepath.Ext(name)));w.Header().Set("X-Content-Type-Options","nosniff");w.Header().Set("Content-Disposition",fmt.Sprintf("attachment; filename=%q",name));http.ServeContent(w,r,name,time.Time{},f)
+	w.Header().Set("Content-Type",mimeType);w.Header().Set("X-Content-Type-Options","nosniff");w.Header().Set("Content-Disposition",fmt.Sprintf("attachment; filename=%q",name));http.ServeContent(w,r,name,time.Time{},f)
 }
 func (a *API) deleteAsset(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};storageDir:=strings.TrimSpace(os.Getenv("ASSET_STORAGE_DIR"));if storageDir==""{fail(w,503,"STORAGE_NOT_CONFIGURED","Persistent file storage is not configured.");return}
