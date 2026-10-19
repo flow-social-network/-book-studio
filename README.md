@@ -17,7 +17,7 @@
 <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
 <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white" />
 <img alt="Status" src="https://img.shields.io/badge/status-em_desenvolvimento-orange" />
-<img alt="License" src="https://img.shields.io/badge/license-a_definir-lightgrey" />
+<img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" />
 
 <p><em>Um projeto em construção. As capacidades descritas como planeadas não devem ser interpretadas como integrações já implementadas ou testadas.</em></p>
 
@@ -395,7 +395,7 @@ Contribuições são bem-vindas. Antes de abrir uma alteração:
 - [Especificação do produto](docs/PRODUCT_SPEC.md)
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Inventário de rotas](docs/ROUTES.md)
-- [Estado do desenvolvimento](docs/DEVELOPMENT_STATUS.md)
+- [Estado do desenvolvimento](docs/DEVELOPMENT_STATUS.md)\n- [Como contribuir](CONTRIBUTING.md)\n- [Apoiar o projeto](DONATIONS.md)\n- [Licença AGPL-3.0](LICENSE)
 
 <div align="center">
 
