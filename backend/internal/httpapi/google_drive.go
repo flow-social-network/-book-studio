@@ -28,7 +28,7 @@ func driveOAuthConfig() (*oauth2.Config,error) {
 	secret:=strings.TrimSpace(os.Getenv("GOOGLE_DRIVE_CLIENT_SECRET"))
 	redirect:=strings.TrimSpace(os.Getenv("GOOGLE_DRIVE_REDIRECT_URL"))
 	if id==""||secret==""||redirect=="" { return nil,fmt.Errorf("Google Drive OAuth credentials and redirect URL are not configured") }
-	return &oauth2.Config{ClientID:id,ClientSecret:secret,RedirectURL:redirect,Scopes:[]string{"https://www.googleapis.com/auth/drive.file"},Endpoint:google.Endpoint,AccessType:"offline"},nil
+	return &oauth2.Config{ClientID:id,ClientSecret:secret,RedirectURL:redirect,Scopes:[]string{"https://www.googleapis.com/auth/drive.file"},Endpoint:google.Endpoint},nil
 }
 
 func (a *API) driveStatus(w http.ResponseWriter,r *http.Request) {
