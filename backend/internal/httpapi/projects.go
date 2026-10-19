@@ -97,7 +97,7 @@ func (a *API) createProject(w http.ResponseWriter, r *http.Request) {
 	if in.Title=="" || in.Author=="" { fail(w,400,"VALIDATION_ERROR","Title and author are required"); return }
 	if in.Language=="" { in.Language="pt-BR" }; if in.Format=="" { in.Format="A5" }; if in.Status=="" { in.Status="draft" }; if len(in.Content)==0 { in.Content=json.RawMessage(`{"type":"doc","content":[{"type":"paragraph"}]}`) }
 	var p Project
-	_,err=a.DB.Exec(r.Context(),`INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`,uid)
+	_,err:=a.DB.Exec(r.Context(),`INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`,uid)
 	if err!=nil { internal(w,err); return }
 	err=a.DB.QueryRow(r.Context(),`INSERT INTO projects(owner_id,title,author,subtitle,genre,language,format,description,status,content) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb) RETURNING id::text,title,author,subtitle,genre,language,format,description,status,content,created_at,updated_at`,uid,in.Title,in.Author,in.Subtitle,in.Genre,in.Language,in.Format,in.Description,in.Status,string(in.Content)).Scan(&p.ID,&p.Title,&p.Author,&p.Subtitle,&p.Genre,&p.Language,&p.Format,&p.Description,&p.Status,&p.Content,&p.CreatedAt,&p.UpdatedAt)
 	if err!=nil { internal(w,err); return }; jsonOK(w,201,p)
