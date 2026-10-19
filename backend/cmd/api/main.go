@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"book-studio/backend/internal/database"
 	"book-studio/backend/internal/auth"
 	"book-studio/backend/internal/httpapi"
 )
@@ -30,6 +31,7 @@ func main() {
 	pingCtx, cancelPing := context.WithTimeout(ctx, 5*time.Second)
 	if err := pool.Ping(pingCtx); err != nil { cancelPing(); log.Fatalf("PostgreSQL is unavailable: %v", err) }
 	cancelPing()
+	if err := database.Migrate(ctx, pool); err != nil { log.Fatalf("apply database migrations: %v", err) }
 
 	firebaseClient, err := auth.NewFirebaseVerifier(ctx, os.Getenv("FIREBASE_CREDENTIALS_FILE"), os.Getenv("FIREBASE_PROJECT_ID"))
 	if err != nil { log.Fatalf("initialize Firebase token verifier: %v", err) }
