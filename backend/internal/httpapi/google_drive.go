@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -87,6 +88,7 @@ func (a *API) syncDriveProject(w http.ResponseWriter,r *http.Request) {
 	if err!=nil{fail(w,502,"DRIVE_UPLOAD_FAILED",err.Error());return}
 	_,err=a.DB.Exec(r.Context(),`INSERT INTO google_drive_sync_files(owner_id,project_id,drive_file_id,drive_name,synced_at) VALUES($1,$2,$3,$4,now()) ON CONFLICT(owner_id,project_id) DO UPDATE SET drive_file_id=EXCLUDED.drive_file_id,drive_name=EXCLUDED.drive_name,synced_at=now()`,uid,p.ID,fileID,p.Title+".txt")
 	if err!=nil{internal(w,err);return}
+	if err:=createNotification(r.Context(),a.DB,uid,"Google Drive sincronizado",p.Title,"/app/integracoes/google-drive");err!=nil{log.Printf("create Drive sync notification: %v",err)}
 	jsonOK(w,200,map[string]any{"synced":true,"projectId":p.ID,"driveFileId":fileID,"syncedAt":time.Now().UTC()})
 }
 
