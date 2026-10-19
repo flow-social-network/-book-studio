@@ -1,9 +1,8 @@
 package httpapi
 
 import (
-	"net/http/httptest"
 	"encoding/base64"
-	"os"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -12,17 +11,12 @@ func TestDecodeRejectsUnknownFields(t *testing.T) {
 	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"title":"Book","unknown":true}`))
 	rec := httptest.NewRecorder()
 	var dst projectInput
-	if decode(rec, req, &dst) {
-		t.Fatal("expected invalid request to be rejected")
-	}
-	if rec.Code != 400 {
-		t.Fatalf("expected status 400, got %d", rec.Code)
-	}
+	if decode(rec, req, &dst) { t.Fatal("expected invalid request to be rejected") }
+	if rec.Code != 400 { t.Fatalf("expected status 400, got %d", rec.Code) }
 }
 
 func TestEncryptDecryptTokenRoundTrip(t *testing.T) {
-	key := base64.StdEncoding.EncodeToString([]byte("01234567890123456789012345678901"))
-	t.Setenv("TOKEN_ENCRYPTION_KEY", key)
+	t.Setenv("TOKEN_ENCRYPTION_KEY", base64.StdEncoding.EncodeToString([]byte("01234567890123456789012345678901")))
 	encrypted, err := encryptToken("refresh-token-secret")
 	if err != nil { t.Fatalf("encrypt token: %v", err) }
 	if encrypted == "refresh-token-secret" { t.Fatal("token must not be stored in plaintext") }
@@ -47,13 +41,3 @@ func TestFlattenJSONPreservesDocumentOrder(t *testing.T) {
 func TestXMLEscape(t *testing.T) {
 	if got := xmlEscape(`A & <B> "C"`); got != "A &amp; &lt;B&gt; &quot;C&quot;" { t.Fatalf("unexpected XML escaping: %q", got) }
 }
-
-func TestDecodeRejectsUnknownFields(t *testing.T) {
-	req := httptest.NewRequest("POST", "/", strings.NewReader(`{"title":"Book","unknown":true}`))
-	rec := httptest.NewRecorder()
-	var dst projectInput
-	if decode(rec, req, &dst) { t.Fatal("expected invalid request to be rejected") }
-	if rec.Code != 400 { t.Fatalf("expected status 400, got %d", rec.Code) }
-}
-
-var _ = os.Getenv
