@@ -49,3 +49,24 @@ export type Chapter = {
   createdAt:string;updatedAt:string;
 };
 export type ProjectInput = Omit<Project,'id'|'createdAt'|'updatedAt'>;
+
+export async function downloadAPIFile(path: string, filename: string): Promise<void> {
+  if (!baseURL) throw new Error('NEXT_PUBLIC_BOOK_STUDIO_API_URL is not configured.');
+  const user = firebaseAuth().currentUser;
+  if (!user) throw new APIError('Entre na sua conta para continuar.', 401, 'UNAUTHENTICATED');
+  const response = await fetch(`${baseURL}${path}`, {headers:{Authorization:`Bearer ${await user.getIdToken()}`},cache:'no-store'});
+  if (!response.ok) {
+    let message = `A API respondeu com HTTP ${response.status}.`;
+    try { const body = await response.json(); message = body?.error?.message ?? message; } catch { /* Keep HTTP error. */ }
+    throw new APIError(message,response.status,'EXPORT_ERROR');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
