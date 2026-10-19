@@ -70,3 +70,25 @@ export async function downloadAPIFile(path: string, filename: string): Promise<v
   anchor.remove();
   URL.revokeObjectURL(url);
 }
+
+export async function uploadAPIFile(file: File, projectId?: string): Promise<unknown> {
+  if (!baseURL) throw new Error('NEXT_PUBLIC_BOOK_STUDIO_API_URL is not configured.');
+  const user = firebaseAuth().currentUser;
+  if (!user) throw new APIError('Entre na sua conta para continuar.', 401, 'UNAUTHENTICATED');
+  const body = new FormData();
+  body.append('file', file);
+  if (projectId) body.append('projectId', projectId);
+  const response = await fetch(`${baseURL}/api/v1/assets`, {method:'POST',headers:{Authorization:`Bearer ${await user.getIdToken()}`},body,cache:'no-store'});
+  if (!response.ok) {
+    let message = `A API respondeu com HTTP ${response.status}.`;
+    try { const data = await response.json(); message = data?.error?.message ?? message; } catch { /* Keep HTTP error. */ }
+    throw new APIError(message,response.status,'UPLOAD_ERROR');
+  }
+  return response.json();
+}
+export async function deleteAPIAsset(id: string): Promise<void> {
+  return api<void>(`/api/v1/assets/${id}`,{method:'DELETE'});
+}
+export async function downloadAPIAsset(id: string, filename: string): Promise<void> {
+  return downloadAPIFile(`/api/v1/assets/${id}/download`,filename);
+}
