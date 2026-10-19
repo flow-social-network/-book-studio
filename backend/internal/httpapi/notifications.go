@@ -16,6 +16,8 @@ type Notification struct {
  CreatedAt time.Time `json:"createdAt"`
 }
 
+func ensureUser(ctx context.Context, db *pgxpool.Pool, ownerID string) error { _,err:=db.Exec(ctx, `INSERT INTO users(id) VALUES($1) ON CONFLICT(id) DO NOTHING`, ownerID); return err }
+
 func createNotification(ctx context.Context, db *pgxpool.Pool, ownerID, title, message, href string) error {
  _, err := db.Exec(ctx, `INSERT INTO notifications(owner_id,title,message,href) VALUES($1,$2,$3,$4)`, ownerID, title, message, href)
  return err
