@@ -152,7 +152,7 @@ func (a *API) getPreferences(w http.ResponseWriter,r *http.Request) {
 	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};var raw json.RawMessage;err:=a.DB.QueryRow(r.Context(),`SELECT preferences FROM user_preferences WHERE owner_id=$1`,uid).Scan(&raw);if errors.Is(err,pgx.ErrNoRows){jsonOK(w,200,map[string]any{"preferences":map[string]any{}});return};if err!=nil{internal(w,err);return};jsonOK(w,200,map[string]any{"preferences":raw})
 }
 func (a *API) putPreferences(w http.ResponseWriter,r *http.Request) {
-	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};var body struct{Preferences json.RawMessage `json:"preferences"`};if !decode(w,r,&body){return};if len(body.Preferences)==0||!json.Valid(body.Preferences){fail(w,400,"VALIDATION_ERROR","A valid preferences object is required");return}
+	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return};var body struct{Preferences json.RawMessage `json:"preferences"`};if !decode(w,r,&body){return};if len(body.Preferences)==0||!json.Valid(body.Preferences){fail(w,400,"VALIDATION_ERROR","A valid preferences object is required");return};if err:=ensureUser(r.Context(),a.DB,uid);err!=nil{internal(w,err);return}
 	_,err:=a.DB.Exec(r.Context(),`INSERT INTO user_preferences(owner_id,preferences) VALUES($1,$2::jsonb) ON CONFLICT(owner_id) DO UPDATE SET preferences=EXCLUDED.preferences,updated_at=now()`,uid,string(body.Preferences));if err!=nil{internal(w,err);return};jsonOK(w,200,map[string]any{"preferences":body.Preferences})
 }
 func decode(w http.ResponseWriter,r *http.Request,dst any) bool {
