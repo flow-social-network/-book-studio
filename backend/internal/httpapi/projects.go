@@ -71,6 +71,8 @@ func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/reviews", a.listReviews)
 	mux.HandleFunc("GET /api/v1/dashboard", a.dashboard)
 	mux.HandleFunc("GET /api/v1/integrations", a.integrations)
+	mux.HandleFunc("GET /api/v1/notifications", a.listNotifications)
+	mux.HandleFunc("PATCH /api/v1/notifications/{id}/read", a.markNotificationRead)
 	mux.HandleFunc("GET /api/v1/integrations/google-drive/status", a.driveStatus)
 	mux.HandleFunc("POST /api/v1/integrations/google-drive/connect", a.startDriveOAuth)
 	mux.HandleFunc("POST /api/v1/integrations/google-drive/sync", a.syncDriveProject)
