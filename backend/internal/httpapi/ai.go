@@ -108,7 +108,7 @@ func (a *API) listReviews(w http.ResponseWriter, r *http.Request) {
 			internal(w, err); return
 		}
 	}
-	rows, err := a.DB.Query(r.Context(), `SELECT id::text,project_id::text,status,provider,result,error_code,created_at,completed_at FROM editorial_reviews WHERE owner_id=$1 AND ($2='' OR project_id=$2::uuid) ORDER BY created_at DESC LIMIT 100`, uid, projectID)
+	rows, err := a.DB.Query(r.Context(), `SELECT id::text,project_id::text,status,provider,result,error_code,created_at,completed_at FROM editorial_reviews WHERE owner_id=$1 AND ($2='' OR project_id::text=$2) ORDER BY created_at DESC LIMIT 100`, uid, projectID)
 	if err != nil { internal(w, err); return }
 	defer rows.Close()
 	type review struct {
