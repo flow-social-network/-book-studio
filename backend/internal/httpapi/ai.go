@@ -3,7 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json"\n\t"errors"\n\t"time"\n\t"github.com/jackc/pgx/v5"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,3 +53,13 @@ func callNVIDIA(ctx context.Context,system,user string)(string,error){
 	var parsed nimResponse;if err:=json.Unmarshal(body,&parsed);err!=nil{return "",fmt.Errorf("NVIDIA response was not valid JSON")};if parsed.Error!=nil{return "",fmt.Errorf("NVIDIA provider returned an error")};if len(parsed.Choices)==0||strings.TrimSpace(parsed.Choices[0].Message.Content)==""{return "",fmt.Errorf("NVIDIA provider returned no content")};return parsed.Choices[0].Message.Content,nil
 }
 func envOr(key,fallback string)string{if v:=strings.TrimSpace(os.Getenv(key));v!=""{return v};return fallback}
+
+func (a *API) listReviews(w http.ResponseWriter,r *http.Request) {
+	uid,ok:=user(r);if !ok{fail(w,401,"UNAUTHENTICATED","Sign-in required");return}
+	projectID:=r.URL.Query().Get("projectId")
+	if projectID!=""{if _,err:=a.project(r,uid,projectID);err!=nil{if errors.Is(err,pgx.ErrNoRows){fail(w,404,"NOT_FOUND","Project not found");return};internal(w,err);return}}
+	rows,err:=a.DB.Query(r.Context(),`SELECT id::text,project_id::text,status,provider,result,error_code,created_at,completed_at FROM editorial_reviews WHERE owner_id=$1 AND ($2='' OR project_id=$2::uuid) ORDER BY created_at DESC LIMIT 100`,uid,projectID)
+	if err!=nil{internal(w,err);return};defer rows.Close()
+	type review struct{ID string `json:"id"`;ProjectID string `json:"projectId"`;Status string `json:"status"`;Provider string `json:"provider"`;Result json.RawMessage `json:"result"`;ErrorCode *string `json:"errorCode"`;CreatedAt time.Time `json:"createdAt"`;CompletedAt *time.Time `json:"completedAt"`}
+	items:=[]review{};for rows.Next(){var x review;if err:=rows.Scan(&x.ID,&x.ProjectID,&x.Status,&x.Provider,&x.Result,&x.ErrorCode,&x.CreatedAt,&x.CompletedAt);err!=nil{internal(w,err);return};items=append(items,x)};if err:=rows.Err();err!=nil{internal(w,err);return};jsonOK(w,200,map[string]any{"items":items,"total":len(items)})
+}
