@@ -43,8 +43,10 @@ func main() {
 		if err := pool.Ping(pingCtx); err != nil { writeJSON(w, 503, map[string]string{"status":"not_ready"}); return }
 		writeJSON(w, 200, map[string]string{"status":"ready"})
 	})
+	api := &httpapi.API{DB: pool}
 	protected := http.NewServeMux()
-	(&httpapi.API{DB: pool}).Register(protected)
+	api.Register(protected)
+	mux.HandleFunc("GET /api/v1/integrations/google-drive/callback", api.GoogleDriveCallback)
 	mux.Handle("/api/v1/", auth.RequireUser(firebaseClient, protected))
 
 	server := &http.Server{Addr: addr, Handler: cors(securityHeaders(mux), os.Getenv("CORS_ALLOWED_ORIGINS")), ReadHeaderTimeout:5*time.Second, ReadTimeout:15*time.Second, WriteTimeout:30*time.Second, IdleTimeout:60*time.Second}
