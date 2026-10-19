@@ -1,29 +1,34 @@
 # Book Studio
 
-Open-source AI-powered book creation studio: writing, illustration, editorial review, typesetting, and publishing workflows.
+**Book Studio** é um estúdio editorial com IA para planear, escrever, ilustrar, rever, diagramar, exportar e preparar livros para publicação.
+
+## Identidade visual e metadados
+- Logótipo vetorial: `public/brand/book-studio-logo.svg`
+- Ícone da aplicação e favicon: `public/icon.svg`
+- Manifesto PWA: `public/site.webmanifest`
+- Imagem Open Graph: `src/app/opengraph-image.svg`
+- Metadados globais, Open Graph, Twitter Cards, robots, ícones e tema: `src/app/layout.tsx`
 
 ## Stack
-- Next.js App Router, React, TypeScript
+- Next.js App Router, React e TypeScript
 - Tailwind CSS
-- Firebase Authentication (integration phase)
-- Neon PostgreSQL (primary relational database)
-- Google Drive API (user-authorized file storage)
-- NVIDIA API (provider adapter for text and image models)
-- MongoDB (optional secondary adapter for self-hosted VPS deployments)
+- Firebase Authentication (integração planeada)
+- Neon PostgreSQL como base de dados principal
+- Google Drive API para armazenamento autorizado pelo utilizador
+- NVIDIA API para modelos de texto e imagem
+- MongoDB como adaptador opcional secundário para VPS/autohospedagem
 
-## Development
-Requires Node.js 22+ and pnpm.
+## Desenvolvimento
+Requer Node.js 22+ e pnpm.
 
-1. Copy .env.example to .env.local.
-2. Run pnpm install.
-3. Run pnpm dev.
+1. Copie `.env.example` para `.env.local`.
+2. Execute `pnpm install`.
+3. Execute `pnpm dev`.
 
-The initial UI foundation may display explicitly labeled example projects. These are not persisted user data. Integrations must never report success unless the service confirms it.
+## Segurança e estado das integrações
+A autenticação de produção deve usar Firebase Authentication e autorização no servidor. Qualquer acesso temporário para revisão visual deve ficar restrito ao ambiente de desenvolvimento/pré-visualização, nunca ser tratado como autenticação real nem ficar ativo em produção. As integrações só devem indicar sucesso após confirmação do serviço externo.
 
-## Authentication
-Production must use real Firebase Authentication and server-side authorization. A temporary development-only UI bypass may be used only outside production, behind an explicit environment flag. It is not authentication and must never be enabled in production.
+## Documentação
+Consulte `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, `docs/ROUTES.md` e `docs/DEVELOPMENT_STATUS.md`.
 
-## Docs
-See docs/PRODUCT_SPEC.md, docs/ARCHITECTURE.md, docs/ROUTES.md, and docs/DEVELOPMENT_STATUS.md.
-
-License has not yet been selected.
+A licença open source ainda precisa de ser escolhida antes de uma publicação formal.
