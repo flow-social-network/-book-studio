@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -63,6 +64,7 @@ func (a *API) generateAI(w http.ResponseWriter, r *http.Request) {
 		if marshalErr != nil { internal(w, marshalErr); return }
 		_, err = a.DB.Exec(r.Context(), `INSERT INTO editorial_reviews(owner_id,project_id,status,provider,result,completed_at) VALUES($1,$2,'completed','nvidia-nim',$3::jsonb,now())`, uid, p.ID, string(resultJSON))
 		if err != nil { internal(w, err); return }
+		if err:=createNotification(r.Context(),a.DB,uid,"Revisão editorial concluída",p.Title,"/app/editor/revisao");err!=nil{log.Printf("create review notification: %v",err)}
 	}
 	jsonOK(w, 200, map[string]any{"projectId": p.ID, "mode": in.Mode, "provider": "nvidia-nim", "model": envOr("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct"), "result": result, "generatedAt": time.Now().UTC()})
 }
