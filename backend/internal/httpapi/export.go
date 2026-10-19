@@ -21,7 +21,7 @@ func (a *API) exportEPUB(w http.ResponseWriter,r *http.Request) {
 	if err:=chapters.Err();err!=nil{chapters.Close();internal(w,err);return};chapters.Close()
 	var b bytes.Buffer;zw:=zip.NewWriter(&b)
 	write:=func(name,content string)error{f,err:=zw.Create(name);if err!=nil{return err};_,err=f.Write([]byte(content));return err}
-	if err:=write("mimetype","application/epub+zip");err!=nil{internal(w,err);return}
+	mimeHeader:=&zip.FileHeader{Name:"mimetype",Method:zip.Store};mimeWriter,err:=zw.CreateHeader(mimeHeader);if err!=nil{internal(w,err);return};if _,err=mimeWriter.Write([]byte("application/epub+zip"));err!=nil{internal(w,err);return}
 	if err:=write("META-INF/container.xml",`<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);err!=nil{internal(w,err);return}
 	items:=[]string{};spine:=[]string{};manifest:=""
 	makeChapter:=func(title string,content json.RawMessage)string{var node any;_ = json.Unmarshal(content,&node);text:=flattenJSON(node);return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>"+xmlEscape(title)+"</title></head><body><h1>"+xmlEscape(title)+"</h1><p>"+strings.ReplaceAll(xmlEscape(text),"\n","</p><p>")+"</p></body></html>"}
@@ -33,5 +33,5 @@ func (a *API) exportEPUB(w http.ResponseWriter,r *http.Request) {
 	if err:=write("OEBPS/content.opf",opf);err!=nil{internal(w,err);return};if err:=zw.Close();err!=nil{internal(w,err);return}
 	w.Header().Set("Content-Type","application/epub+zip");w.Header().Set("Content-Disposition",`attachment; filename="book.epub"`);w.WriteHeader(http.StatusOK);_,_=w.Write(b.Bytes())
 }
-func flattenJSON(v any)string{switch x:=v.(type){case map[string]any:if t,ok:=x["text"].(string);ok{return t};var out []string;for _,v:=range x{if s:=flattenJSON(v);s!=""{out=append(out,s)}};return strings.Join(out," ");case []any:var out []string;for _,v:=range x{if s:=flattenJSON(v);s!=""{out=append(out,s)}};return strings.Join(out," ");default:return ""}}
+func flattenJSON(v any)string{switch x:=v.(type){case map[string]any:if t,ok:=x["text"].(string);ok{return t};if children,ok:=x["content"];ok{return flattenJSON(children)};return "";case []any:var out []string;for _,v:=range x{if s:=flattenJSON(v);s!=""{out=append(out,s)}};return strings.Join(out," ");default:return ""}}
 func xmlEscape(s string)string{r:=strings.NewReplacer("&","&amp;","<","&lt;",">","&gt;","\"","&quot;","'","&apos;");return r.Replace(s)}
