@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {usePathname} from 'next/navigation';
 import {useState} from 'react';
-import {BookOpen, LayoutDashboard, FolderOpen, Plus, Image as ImageIcon, Sparkles, Cloud, ChevronDown, UserRound, SlidersHorizontal, BookMarked, FileText, Menu, X, ShieldCheck, ChevronRight} from 'lucide-react';
+import {BookOpen, LayoutDashboard, FolderOpen, Plus, Image as ImageIcon, Sparkles, Cloud, Bell, ChevronDown, UserRound, SlidersHorizontal, BookMarked, FileText, Menu, X, ShieldCheck, ChevronRight} from 'lucide-react';
 
 const nav = [
  {label:'Visão geral',href:'/app',icon:LayoutDashboard},
