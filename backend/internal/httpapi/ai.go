@@ -35,6 +35,11 @@ func (a *API) generateAI(w http.ResponseWriter,r *http.Request) {
 	system:="Você é um assistente editorial profissional. Ajude o autor sem afirmar fatos não presentes no material. Preserve a autoria, não invente referências e devolva apenas o resultado solicitado. Contexto do livro: título="+p.Title+"; autor="+p.Author+"; gênero="+p.Genre+"; descrição="+p.Description+"; manuscrito JSON="+string(content)
 	if in.Mode=="review"{system="Você é um revisor editorial. Analise apenas o material fornecido e produza uma revisão estruturada em português com seções: pontos fortes, problemas identificados, sugestões concretas e dúvidas para o autor. Não altere o manuscrito automaticamente. Contexto do livro: "+p.Title+"; manuscrito JSON="+string(content)}
 	result,err:=callNVIDIA(r.Context(),system,instruction);if err!=nil{fail(w,502,"AI_PROVIDER_ERROR",err.Error());return}
+	if in.Mode=="review" {
+		resultJSON,_:=json.Marshal(map[string]any{"result":result,"instruction":instruction})
+		_,err=a.DB.Exec(r.Context(),`INSERT INTO editorial_reviews(owner_id,project_id,status,provider,result,completed_at) VALUES($1,$2,'completed','nvidia-nim',$3::jsonb,now())`,uid,p.ID,string(resultJSON))
+		if err!=nil{internal(w,err);return}
+	}
 	jsonOK(w,200,map[string]any{"projectId":p.ID,"mode":in.Mode,"provider":"nvidia-nim","model":envOr("NVIDIA_MODEL","meta/llama-3.1-70b-instruct"),"result":result,"generatedAt":time.Now().UTC()})
 }
 func callNVIDIA(ctx context.Context,system,user string)(string,error){
