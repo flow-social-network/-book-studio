@@ -50,7 +50,7 @@ func (a *API) startDriveOAuth(w http.ResponseWriter,r *http.Request) {
 	jsonOK(w,200,map[string]string{"authorizationUrl":cfg.AuthCodeURL(state,oauth2.AccessTypeOffline,oauth2.ApprovalForce)})
 }
 
-func (a *API) driveOAuthCallback(w http.ResponseWriter,r *http.Request) {
+func (a *API) GoogleDriveCallback(w http.ResponseWriter,r *http.Request) {
 	if providerErr:=r.URL.Query().Get("error");providerErr!=""{http.Redirect(w,r,frontendURL()+"/app/integracoes/google-drive?error=consent_denied",http.StatusSeeOther);return}
 	state:=r.URL.Query().Get("state");code:=r.URL.Query().Get("code")
 	if state==""||code==""{http.Redirect(w,r,frontendURL()+"/app/integracoes/google-drive?error=invalid_callback",http.StatusSeeOther);return}
@@ -87,7 +87,7 @@ func (a *API) syncDriveProject(w http.ResponseWriter,r *http.Request) {
 }
 
 func uploadDriveText(ctx context.Context,accessToken,name,content string)(string,error){
-	boundary:="bookstudio-"+base64.RawURLEncoding.EncodeToString(make([]byte,12))
+	randomBoundary:=make([]byte,18);if _,err:=rand.Read(randomBoundary);err!=nil{return "",err};boundary:="bookstudio-"+base64.RawURLEncoding.EncodeToString(randomBoundary)
 	var body bytes.Buffer
 	body.WriteString("--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n")
 	meta,_:=json.Marshal(map[string]string{"name":name,"mimeType":"text/plain"})
