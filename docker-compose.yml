@@ -1,0 +1,26 @@
+services:
+  book-studio-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - book-studio-assets:/var/lib/book-studio/assets
+      - ${FIREBASE_CREDENTIALS_HOST_PATH:-./secrets/firebase-service-account.json}:/run/secrets/firebase-service-account.json:ro
+    environment:
+      HTTP_ADDR: ":8080"
+      ASSET_STORAGE_DIR: /var/lib/book-studio/assets
+      FIREBASE_CREDENTIALS_FILE: /run/secrets/firebase-service-account.json
+      MIGRATIONS_DIR: migrations
+    healthcheck:
+      test: ["CMD", "/book-studio-api"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  book-studio-assets:
