@@ -67,6 +67,8 @@ func (a *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/projects/{id}/chapters/{chapterID}", a.deleteChapter)
 	mux.HandleFunc("GET /api/v1/me/preferences", a.getPreferences)
 	mux.HandleFunc("PUT /api/v1/me/preferences", a.putPreferences)
+	mux.HandleFunc("POST /api/v1/projects/{id}/ai", a.generateAI)
+	mux.HandleFunc("POST /api/v1/projects/{id}/export/epub", a.exportEPUB)
 }
 
 func user(r *http.Request) (string, bool) { return auth.UserID(r.Context()) }
