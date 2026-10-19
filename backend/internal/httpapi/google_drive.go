@@ -75,7 +75,7 @@ func (a *API) syncDriveProject(w http.ResponseWriter,r *http.Request) {
 	refresh,err:=decryptToken(encrypted);if err!=nil{fail(w,500,"TOKEN_DECRYPTION_FAILED","Could not decrypt the stored Google Drive token.");return}
 	p,err:=a.project(r,uid,in.ProjectID);if errors.Is(err,pgx.ErrNoRows){fail(w,404,"NOT_FOUND","Project not found");return};if err!=nil{internal(w,err);return}
 	rows,err:=a.DB.Query(r.Context(),`SELECT title,content FROM chapters WHERE project_id=$1 AND owner_id=$2 ORDER BY position,id`,p.ID,uid);if err!=nil{internal(w,err);return}
-	var body strings.Builder;body.WriteString("# "+p.Title+"\n\nBy "+p.Author+"\n\n"+p.Description+"\n\n")
+	var body strings.Builder;body.WriteString("# "+p.Title+"\n\nBy "+p.Author+"\n\n"+p.Description+"\n\n"+flattenJSON(p.Content)+"\n\n")
 	for rows.Next(){var title string;var raw []byte;if err:=rows.Scan(&title,&raw);err!=nil{rows.Close();internal(w,err);return};var node any;_ = json.Unmarshal(raw,&node);body.WriteString("\n## "+title+"\n\n"+flattenJSON(node)+"\n")}
 	if err:=rows.Err();err!=nil{rows.Close();internal(w,err);return};rows.Close()
 	source:=cfg.TokenSource(r.Context(),&oauth2.Token{RefreshToken:refresh,TokenType:"Bearer"})
